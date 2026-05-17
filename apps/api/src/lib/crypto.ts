@@ -4,6 +4,7 @@ import { jwtVerify, SignJWT } from "jose";
 import { env } from "../env";
 
 const encoder = new TextEncoder();
+const fallbackRefreshTokens = new Map<string, { userId: string; expiresAt: number }>();
 
 export interface TokenSubject {
   userId: string;
@@ -41,7 +42,7 @@ export async function issueTokenPair(redis: Redis, subject: TokenSubject): Promi
     .setExpirationTime(env.JWT_REFRESH_EXPIRES)
     .sign(secret(env.JWT_REFRESH_SECRET));
 
-  await redis.set(`refresh:${refreshJti}`, subject.userId, "EX", 60 * 60 * 24 * 7);
+  await storeRefreshToken(redis, refreshJti, subject.userId);
   return { accessToken, refreshToken };
 }
 
@@ -53,11 +54,11 @@ export async function rotateRefreshToken(
   if (payload.kind !== "refresh" || !payload.sub || !payload.jti) {
     throw new Error("Invalid refresh token");
   }
-  const stored = await redis.get(`refresh:${payload.jti}`);
+  const stored = await getRefreshToken(redis, payload.jti);
   if (stored !== payload.sub) {
     throw new Error("Refresh token has been revoked");
   }
-  await redis.del(`refresh:${payload.jti}`);
+  await deleteRefreshToken(redis, payload.jti);
   const subject = {
     userId: payload.sub,
     orgId: String(payload.orgId),
@@ -82,6 +83,51 @@ export async function verifyAccessToken(accessToken: string): Promise<TokenSubje
 export async function revokeRefreshToken(redis: Redis, refreshToken: string) {
   const { payload } = await jwtVerify(refreshToken, secret(env.JWT_REFRESH_SECRET));
   if (payload.jti) {
-    await redis.del(`refresh:${payload.jti}`);
+    await deleteRefreshToken(redis, payload.jti);
+  }
+}
+
+async function storeRefreshToken(redis: Redis, jti: string, userId: string) {
+  try {
+    await redis.set(`refresh:${jti}`, userId, "EX", 60 * 60 * 24 * 7);
+  } catch (error) {
+    if (env.NODE_ENV === "production") {
+      throw error;
+    }
+    fallbackRefreshTokens.set(jti, {
+      userId,
+      expiresAt: Date.now() + 60 * 60 * 24 * 7 * 1000,
+    });
+  }
+}
+
+async function getRefreshToken(redis: Redis, jti: string) {
+  try {
+    return await redis.get(`refresh:${jti}`);
+  } catch (error) {
+    if (env.NODE_ENV === "production") {
+      throw error;
+    }
+    const fallback = fallbackRefreshTokens.get(jti);
+    if (!fallback) {
+      return null;
+    }
+    if (fallback.expiresAt <= Date.now()) {
+      fallbackRefreshTokens.delete(jti);
+      return null;
+    }
+    return fallback.userId;
+  }
+}
+
+async function deleteRefreshToken(redis: Redis, jti: string) {
+  try {
+    await redis.del(`refresh:${jti}`);
+  } catch (error) {
+    if (env.NODE_ENV === "production") {
+      throw error;
+    }
+  } finally {
+    fallbackRefreshTokens.delete(jti);
   }
 }

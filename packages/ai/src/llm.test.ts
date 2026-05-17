@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createGenerateContentConfig } from "./llm";
+import { createGenerateContentConfig, estimateFileInputTokens } from "./llm";
 
 describe("Gemini request config", () => {
   test("enables Google Search grounding by default for text generation", () => {
@@ -47,5 +47,9 @@ describe("Gemini request config", () => {
     );
 
     expect(config.tools).toBeUndefined();
+  });
+
+  test("estimates file input tokens from byte size for multimodal fallback accounting", () => {
+    expect(estimateFileInputTokens(9)).toBe(3);
   });
 });

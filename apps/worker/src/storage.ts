@@ -13,7 +13,21 @@ const storage = new S3Client({
   },
 });
 
-export async function loadContractDocument(input: { storageKey: string; mimeType: string | null }) {
+export interface LoadedContractDocument {
+  text: string;
+  ocrNeeded: boolean;
+  ocrUsed: boolean;
+  textDensity: "empty" | "sparse" | "readable";
+  file?: {
+    data: Uint8Array;
+    mimeType: string;
+  };
+}
+
+export async function loadContractDocument(input: {
+  storageKey: string;
+  mimeType: string | null;
+}): Promise<LoadedContractDocument> {
   const result = await storage.send(
     new GetObjectCommand({ Bucket: env.STORAGE_BUCKET, Key: input.storageKey }),
   );
@@ -31,7 +45,7 @@ export async function loadContractDocument(input: { storageKey: string; mimeType
       ocrNeeded: false,
       ocrUsed: false,
       textDensity: textDensity(extracted.value),
-    };
+    } satisfies LoadedContractDocument;
   }
   if (input.mimeType === "application/pdf") {
     const parser = new PDFParse({ data: bytes });
@@ -39,17 +53,30 @@ export async function loadContractDocument(input: { storageKey: string; mimeType
       const extracted = await parser.getText();
       const text = extracted.text.trim();
       if (text.length > 0) {
-        return { text, ocrNeeded: false, ocrUsed: false, textDensity: textDensity(text) };
+        return {
+          text,
+          ocrNeeded: false,
+          ocrUsed: false,
+          textDensity: textDensity(text),
+          file: { data: bytes, mimeType: "application/pdf" },
+        } satisfies LoadedContractDocument;
       }
       if (!env.OCR_SERVICE_URL) {
-        return { text, ocrNeeded: true, ocrUsed: false, textDensity: "empty" };
+        return {
+          text,
+          ocrNeeded: true,
+          ocrUsed: false,
+          textDensity: "empty",
+          file: { data: bytes, mimeType: "application/pdf" },
+        } satisfies LoadedContractDocument;
       }
       return {
         text: await requestOcrText(bytes),
         ocrNeeded: true,
         ocrUsed: true,
         textDensity: "readable",
-      };
+        file: { data: bytes, mimeType: "application/pdf" },
+      } satisfies LoadedContractDocument;
     } finally {
       await parser.destroy();
     }

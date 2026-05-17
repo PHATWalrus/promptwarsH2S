@@ -22,7 +22,7 @@ export class CrawlerService {
     let lastError: unknown;
     for (const provider of providers) {
       try {
-        return await provider(url);
+        return normalizeCrawlResult(await provider(url), url);
       } catch (error) {
         lastError = error;
       }
@@ -48,12 +48,13 @@ export class CrawlerService {
     if (!response.ok) {
       throw new Error(`Cloudflare Browser Run failed with ${response.status}`);
     }
-    const payload = (await response.json()) as { result?: { markdown?: string; title?: string } };
+    const payload = (await response.json()) as CloudflareMarkdownPayload;
+    const normalized = normalizeCloudflareMarkdownPayload(payload, url);
     return {
       provider: "cloudflare",
-      title: payload.result?.title ?? new URL(url).hostname,
-      markdown: payload.result?.markdown ?? "",
-      metadata: { endpoint: "browser-run-markdown" },
+      title: normalized.title,
+      markdown: normalized.markdown,
+      metadata: { endpoint: "browser-rendering-markdown" },
     };
   }
 
@@ -85,7 +86,10 @@ export class CrawlerService {
 
   private async manual(url: string): Promise<CrawlResult> {
     const response = await fetchWithTimeout(url, {
-      headers: { "User-Agent": "LexguardBot/0.1 legal-document-import" },
+      headers: {
+        Accept: "text/markdown, text/plain, text/html;q=0.9",
+        "User-Agent": "LexguardBot/0.1 legal-document-import",
+      },
     });
     if (!response.ok) {
       throw new Error(`Manual fetch failed with ${response.status}`);
@@ -172,4 +176,36 @@ async function fetchWithTimeout(url: string, init: RequestInit = {}, timeoutMs =
   } finally {
     clearTimeout(timeout);
   }
+}
+
+type CloudflareMarkdownPayload = {
+  result?: string | { markdown?: string; title?: string };
+};
+
+export function normalizeCloudflareMarkdownPayload(
+  payload: CloudflareMarkdownPayload,
+  url: string,
+) {
+  if (typeof payload.result === "string") {
+    return {
+      title: new URL(url).hostname,
+      markdown: payload.result,
+    };
+  }
+  return {
+    title: payload.result?.title ?? new URL(url).hostname,
+    markdown: payload.result?.markdown ?? "",
+  };
+}
+
+function normalizeCrawlResult(result: CrawlResult, url: string): CrawlResult {
+  const markdown = result.markdown.trim();
+  if (markdown.length === 0) {
+    throw new Error(`${result.provider} returned no readable text for ${url}`);
+  }
+  return {
+    ...result,
+    title: result.title.trim() || new URL(url).hostname,
+    markdown,
+  };
 }

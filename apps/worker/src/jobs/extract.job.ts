@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import { env } from "../env";
 import { aiClient, db } from "../lib";
 import type { AnalysisJobData } from "../pipelines/analysis.pipeline";
-import { loadContractDocument } from "../storage";
+import { loadContractDocument, type LoadedContractDocument } from "../storage";
 import { normalizeEmbedding } from "../vector";
 import { parseClauseExtraction } from "./ai-output";
 
@@ -33,6 +33,7 @@ export async function extractJob(job: Job<AnalysisJobData>) {
       storageKey: contract.storageKey,
       mimeType: contract.mimeType,
     });
+    const source = resolveExtractionSource(document);
     await db
       .update(analysisJobs)
       .set({
@@ -40,19 +41,30 @@ export async function extractJob(job: Job<AnalysisJobData>) {
           ocrNeeded: document.ocrNeeded,
           ocrUsed: document.ocrUsed,
           textDensity: document.textDensity,
+          directFileExtraction: source.kind === "file",
         }),
       })
       .where(eq(analysisJobs.id, job.data.analysisJobId));
-    const documentText = document.text;
-    if (!documentText) {
-      throw new Error("Contract text extraction produced no text");
-    }
-    const result = await aiClient.complete({
-      model: env.DEFAULT_LLM_MODEL,
-      systemPrompt: clauseExtractPrompt,
-      userPrompt: `Contract title: ${contract.title}\nContract type: ${contract.contractType}\nJurisdiction: ${contract.jurisdiction ?? "unknown"}\n\nDocument text:\n${documentText.slice(0, 120_000)}`,
-      responseFormat: "json",
-    });
+    const userPrompt = `Contract title: ${contract.title}\nContract type: ${contract.contractType}\nJurisdiction: ${contract.jurisdiction ?? "unknown"}\n\n${
+      source.kind === "text"
+        ? `Document text:\n${source.text.slice(0, 120_000)}`
+        : "The attached PDF is the source contract. Read the PDF directly, including scanned page images, and extract the clauses from it."
+    }`;
+    const result =
+      source.kind === "text"
+        ? await aiClient.complete({
+            model: env.DEFAULT_LLM_MODEL,
+            systemPrompt: clauseExtractPrompt,
+            userPrompt,
+            responseFormat: "json",
+          })
+        : await aiClient.completeWithFile({
+            model: env.DEFAULT_LLM_MODEL,
+            systemPrompt: clauseExtractPrompt,
+            userPrompt,
+            responseFormat: "json",
+            file: source.file,
+          });
     const parsed = parseClauseExtraction(result.content);
     if (parsed.clauses.length > 0) {
       await db.insert(clauses).values(
@@ -77,4 +89,15 @@ export async function extractJob(job: Job<AnalysisJobData>) {
     }
   }
   return { stage: "extract" };
+}
+
+export function resolveExtractionSource(document: LoadedContractDocument) {
+  const text = document.text.trim();
+  if (text.length > 0) {
+    return { kind: "text" as const, text };
+  }
+  if (document.file?.mimeType === "application/pdf") {
+    return { kind: "file" as const, file: document.file };
+  }
+  throw new Error("Contract text extraction produced no text");
 }

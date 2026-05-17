@@ -1,4 +1,9 @@
-import { GoogleGenAI } from "@google/genai";
+import {
+  createPartFromBase64,
+  createPartFromText,
+  createUserContent,
+  GoogleGenAI,
+} from "@google/genai";
 
 export type LLMModel =
   | "gemini-2.5-flash"
@@ -17,8 +22,18 @@ export interface CompleteParams {
   searchGrounding?: boolean;
 }
 
+export interface CompleteWithFileParams extends CompleteParams {
+  file: {
+    data: Uint8Array;
+    mimeType: string;
+  };
+}
+
 export interface LLMClient {
   complete(params: CompleteParams): Promise<{ content: string; tokensUsed: number; cost: number }>;
+  completeWithFile(
+    params: CompleteWithFileParams,
+  ): Promise<{ content: string; tokensUsed: number; cost: number }>;
   embed(text: string): Promise<number[]>;
   streamComplete(params: CompleteParams): AsyncIterable<string>;
 }
@@ -46,6 +61,31 @@ export class GeminiLLMClient implements LLMClient {
 
     const content = result.text ?? "";
     const inputTokens = result.usageMetadata?.promptTokenCount ?? estimateTokens(params.userPrompt);
+    const outputTokens = result.usageMetadata?.candidatesTokenCount ?? estimateTokens(content);
+    const tokensUsed = inputTokens + outputTokens;
+
+    return {
+      content,
+      tokensUsed,
+      cost: estimateGeminiCostCents(inputTokens, outputTokens) / 100,
+    };
+  }
+
+  async completeWithFile(params: CompleteWithFileParams) {
+    const base64 = Buffer.from(params.file.data).toString("base64");
+    const result = await this.ai.models.generateContent({
+      model: params.model,
+      contents: createUserContent([
+        createPartFromText(params.userPrompt),
+        createPartFromBase64(base64, params.file.mimeType),
+      ]),
+      config: createGenerateContentConfig(params, false),
+    });
+
+    const content = result.text ?? "";
+    const inputTokens =
+      result.usageMetadata?.promptTokenCount ??
+      estimateTokens(params.userPrompt) + estimateFileInputTokens(params.file.data.byteLength);
     const outputTokens = result.usageMetadata?.candidatesTokenCount ?? estimateTokens(content);
     const tokensUsed = inputTokens + outputTokens;
 
@@ -102,6 +142,10 @@ export function createGenerateContentConfig(params: CompleteParams, searchGround
 
 export function estimateTokens(text: string) {
   return Math.max(1, Math.ceil(text.length / 4));
+}
+
+export function estimateFileInputTokens(byteLength: number) {
+  return Math.max(1, Math.ceil(byteLength / 3));
 }
 
 export function estimateGeminiCostCents(inputTokens: number, outputTokens: number) {

@@ -14,7 +14,12 @@ export const betterAuthInstance = betterAuth({
   baseURL: env.API_BASE_URL,
   database: drizzleAdapter(db, {
     provider: "pg",
-    schema: { users, sessions, accounts, verifications },
+    schema: {
+      user: users,
+      session: sessions,
+      account: accounts,
+      verification: verifications,
+    },
   }),
   emailAndPassword: {
     enabled: true,
