@@ -12,6 +12,14 @@ describe("upload guard magic-byte detection", () => {
     expect(detectFileSignature(bytes)).toBeNull();
   });
 
+  test("accepts valid UTF-8 legal text while rejecting binary controls", () => {
+    const legalText = new TextEncoder().encode("Résumé terms shall govern indemnité.");
+    expect(detectFileSignature(legalText)).toBe("text/plain");
+
+    const binary = new Uint8Array([0x48, 0x00, 0x49, 0x1f]);
+    expect(detectFileSignature(binary)).toBeNull();
+  });
+
   test("does not allow the disabled scanner in production", () => {
     expect(() =>
       resolveUploadScanner({
