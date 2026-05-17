@@ -3,7 +3,11 @@ import { aiUsageLog } from "@lexguard/db";
 import { env } from "../env";
 import { db } from "../lib/db";
 
-export const aiClient = new GeminiLLMClient(env.GEMINI_API_KEY, env.GEMINI_EMBEDDING_MODEL);
+export const aiClient = new GeminiLLMClient(
+  env.GEMINI_API_KEY,
+  env.GEMINI_EMBEDDING_MODEL,
+  env.GEMINI_SEARCH_GROUNDING,
+);
 
 export async function recordAiUsage(input: {
   userId?: string;

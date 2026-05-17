@@ -14,6 +14,7 @@ export interface CompleteParams {
   responseFormat?: "text" | "json";
   maxTokens?: number;
   temperature?: number;
+  searchGrounding?: boolean;
 }
 
 export interface LLMClient {
@@ -31,6 +32,7 @@ export class GeminiLLMClient implements LLMClient {
   constructor(
     apiKey: string,
     private readonly embeddingModel = "gemini-embedding-001",
+    private readonly searchGrounding = true,
   ) {
     this.ai = new GoogleGenAI({ apiKey });
   }
@@ -39,12 +41,7 @@ export class GeminiLLMClient implements LLMClient {
     const result = await this.ai.models.generateContent({
       model: params.model,
       contents: params.userPrompt,
-      config: {
-        systemInstruction: params.systemPrompt,
-        temperature: params.temperature ?? 0.2,
-        maxOutputTokens: params.maxTokens ?? 4096,
-        responseMimeType: params.responseFormat === "json" ? "application/json" : "text/plain",
-      },
+      config: createGenerateContentConfig(params, params.searchGrounding ?? this.searchGrounding),
     });
 
     const content = result.text ?? "";
@@ -76,11 +73,7 @@ export class GeminiLLMClient implements LLMClient {
     const stream = await this.ai.models.generateContentStream({
       model: params.model,
       contents: params.userPrompt,
-      config: {
-        systemInstruction: params.systemPrompt,
-        temperature: params.temperature ?? 0.2,
-        maxOutputTokens: params.maxTokens ?? 4096,
-      },
+      config: createGenerateContentConfig(params, params.searchGrounding ?? this.searchGrounding),
     });
     for await (const chunk of stream) {
       if (chunk.text) {
@@ -88,6 +81,23 @@ export class GeminiLLMClient implements LLMClient {
       }
     }
   }
+}
+
+export function createGenerateContentConfig(params: CompleteParams, searchGrounding = true) {
+  const responseMimeType =
+    searchGrounding && params.responseFormat === "json"
+      ? undefined
+      : params.responseFormat === "json"
+        ? "application/json"
+        : "text/plain";
+
+  return {
+    systemInstruction: params.systemPrompt,
+    temperature: params.temperature ?? 0.2,
+    maxOutputTokens: params.maxTokens ?? 4096,
+    ...(responseMimeType ? { responseMimeType } : {}),
+    ...(searchGrounding ? { tools: [{ googleSearch: {} }] } : {}),
+  };
 }
 
 export function estimateTokens(text: string) {

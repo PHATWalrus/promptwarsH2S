@@ -5,7 +5,7 @@ nixPkgs = ["bun", "openssl"]
 cmds = ["bun install --frozen-lockfile"]
 
 [phases.build]
-cmds = ["bun --filter @lexguard/api run build"]
+cmds = ["bun --filter @lexguard/worker run build"]
 
 [start]
-cmd = "bun --filter @lexguard/api run start"
+cmd = "bun --filter @lexguard/worker run start"

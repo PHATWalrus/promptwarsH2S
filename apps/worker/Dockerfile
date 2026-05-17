@@ -5,5 +5,6 @@ COPY package.json bun.lock turbo.json biome.json ./
 COPY apps ./apps
 COPY packages ./packages
 RUN bun install --frozen-lockfile
+RUN bun --filter @lexguard/worker run build
 
-CMD ["bun", "--filter", "@lexguard/worker", "run", "dev"]
+CMD ["bun", "--filter", "@lexguard/worker", "run", "start"]

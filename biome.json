@@ -10,6 +10,7 @@
       "!**/coverage",
       "!**/.turbo",
       "!**/drizzle",
+      "!apps/web/src/routeTree.gen.ts",
       "!packages/db/src/migrations/meta"
     ]
   }
