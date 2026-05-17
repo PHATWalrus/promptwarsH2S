@@ -28,6 +28,8 @@ const validProductionEnv = {
   CRAWL_PROVIDER: "manual",
   RATE_LIMIT_UPLOAD_PER_HOUR: "10",
   RATE_LIMIT_CHAT_PER_HOUR: "30",
+  UPLOAD_SCANNER_MODE: "http",
+  UPLOAD_SCANNER_URL: "https://scanner.lexguard.example/scan",
   WORKER_CONCURRENCY: "5",
   ANALYSIS_TIMEOUT_MS: "120000",
 };

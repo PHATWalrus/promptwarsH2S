@@ -10,5 +10,5 @@ export const compareRoutes = new Hono();
 compareRoutes.use("*", authMiddleware, tenantIsolation);
 
 compareRoutes.post("/", zValidator("json", compareContractsSchema), async (c) => {
-  return c.json(await compareContracts(c.req.valid("json").contractIds));
+  return c.json(await compareContracts(c.req.valid("json").contractIds, c.var.user));
 });

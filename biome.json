@@ -8,6 +8,7 @@
       "!**/node_modules",
       "!**/dist",
       "!**/coverage",
+      "!**/test-results",
       "!**/.turbo",
       "!**/drizzle",
       "!apps/web/src/routeTree.gen.ts",

@@ -1,12 +1,15 @@
 import { answerScenarioQuestion } from "@lexguard/ai";
-import { chatMessages, clauses, contracts } from "@lexguard/db";
-import { and, asc, eq } from "drizzle-orm";
+import { chatMessages, clauses, contracts, tenantContractFilter } from "@lexguard/db";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { HTTPException } from "hono/http-exception";
 import { db } from "../lib/db";
+import { toPgVector } from "../lib/vector";
 import type { AuthUser } from "../middleware/auth";
 import { aiClient, defaultModel, recordAiUsage } from "./ai.service";
 
 export class ChatService {
   async history(contractId: string, user: AuthUser) {
+    await ensureContractAccess(contractId, user);
     return db
       .select()
       .from(chatMessages)
@@ -16,6 +19,7 @@ export class ChatService {
   }
 
   async clear(contractId: string, user: AuthUser) {
+    await ensureContractAccess(contractId, user);
     await db
       .delete(chatMessages)
       .where(and(eq(chatMessages.contractId, contractId), eq(chatMessages.userId, user.id)));
@@ -23,14 +27,18 @@ export class ChatService {
   }
 
   async answer(contractId: string, message: string, user: AuthUser) {
+    await ensureContractAccess(contractId, user);
     await db
       .insert(chatMessages)
       .values({ contractId, userId: user.id, role: "user", content: message });
+    const embedding = await aiClient.embed(message);
+    const distance = sql<number>`${clauses.embedding} <=> ${toPgVector(embedding)}::vector`;
     const relevant = await db
-      .select()
+      .select({ clauses, distance })
       .from(clauses)
       .innerJoin(contracts, eq(clauses.contractId, contracts.id))
       .where(and(eq(clauses.contractId, contractId), eq(contracts.orgId, user.orgId)))
+      .orderBy(distance, desc(clauses.confidenceScore))
       .limit(8);
     const result = await answerScenarioQuestion(aiClient, {
       clauses: relevant.map((row) => row.clauses as never),
@@ -64,3 +72,16 @@ export class ChatService {
 }
 
 export const chatService = new ChatService();
+
+async function ensureContractAccess(contractId: string, user: AuthUser) {
+  const [contract] = await db
+    .select({ id: contracts.id })
+    .from(contracts)
+    .where(
+      tenantContractFilter({ userId: user.id, orgId: user.orgId, role: user.role }, contractId),
+    )
+    .limit(1);
+  if (!contract) {
+    throw new HTTPException(404, { message: "Contract not found" });
+  }
+}

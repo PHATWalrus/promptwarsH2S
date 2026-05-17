@@ -3,15 +3,17 @@ import axios from "axios";
 import { create } from "zustand";
 import { env } from "../env";
 
-interface AuthState {
+export interface AuthState {
   user: UserResponse | null;
   accessToken: string | null;
   refreshTokenValue: string | null;
   isLoggedIn: boolean;
+  isBootstrapping: boolean;
   login: (credentials: LoginInput) => Promise<void>;
   register: (input: RegisterInput) => Promise<void>;
   logout: () => Promise<void>;
   refreshToken: () => Promise<void>;
+  bootstrapSession: () => Promise<void>;
   loadMe: () => Promise<void>;
 }
 
@@ -20,6 +22,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   accessToken: null,
   refreshTokenValue: null,
   isLoggedIn: false,
+  isBootstrapping: true,
 
   login: async (credentials) => {
     const { data } = await axios.post<AuthResponse>(`${env.VITE_API_URL}/auth/login`, credentials, {
@@ -30,6 +33,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       accessToken: data.accessToken,
       refreshTokenValue: data.refreshToken,
       isLoggedIn: true,
+      isBootstrapping: false,
     });
   },
 
@@ -42,6 +46,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       accessToken: data.accessToken,
       refreshTokenValue: data.refreshToken,
       isLoggedIn: true,
+      isBootstrapping: false,
     });
   },
 
@@ -51,7 +56,13 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch {
       // Logout is best-effort; local session must still clear.
     } finally {
-      set({ user: null, accessToken: null, refreshTokenValue: null, isLoggedIn: false });
+      set({
+        user: null,
+        accessToken: null,
+        refreshTokenValue: null,
+        isLoggedIn: false,
+        isBootstrapping: false,
+      });
     }
   },
 
@@ -60,17 +71,44 @@ export const useAuthStore = create<AuthState>((set) => ({
       const { data } = await axios.post<AuthResponse>(
         `${env.VITE_API_URL}/auth/refresh`,
         {},
-        { withCredentials: true },
+        { timeout: 2000, withCredentials: true },
       );
       set({
         user: data.user,
         accessToken: data.accessToken,
         refreshTokenValue: data.refreshToken,
         isLoggedIn: true,
+        isBootstrapping: false,
       });
     } catch (error) {
-      set({ user: null, accessToken: null, refreshTokenValue: null, isLoggedIn: false });
+      set({
+        user: null,
+        accessToken: null,
+        refreshTokenValue: null,
+        isLoggedIn: false,
+        isBootstrapping: false,
+      });
       throw error;
+    }
+  },
+
+  bootstrapSession: async () => {
+    set({ isBootstrapping: true });
+    try {
+      await Promise.race([
+        useAuthStore.getState().refreshToken(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Session bootstrap timed out")), 1500),
+        ),
+      ]);
+    } catch {
+      set({
+        user: null,
+        accessToken: null,
+        refreshTokenValue: null,
+        isLoggedIn: false,
+        isBootstrapping: false,
+      });
     }
   },
 
@@ -81,6 +119,6 @@ export const useAuthStore = create<AuthState>((set) => ({
         ? { Authorization: `Bearer ${useAuthStore.getState().accessToken}` }
         : undefined,
     });
-    set({ user: data.user, isLoggedIn: true });
+    set({ user: data.user, isLoggedIn: true, isBootstrapping: false });
   },
 }));

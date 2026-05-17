@@ -10,7 +10,7 @@ import "./styles/globals.css";
 function App() {
   const auth = useAuthStore();
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
-  const refreshToken = useAuthStore((state) => state.refreshToken);
+  const bootstrapSession = useAuthStore((state) => state.bootstrapSession);
   const theme = useUiStore((state) => state.theme);
   const didAttemptRefresh = React.useRef(false);
 
@@ -23,11 +23,9 @@ function App() {
   React.useEffect(() => {
     if (!isLoggedIn && !didAttemptRefresh.current) {
       didAttemptRefresh.current = true;
-      refreshToken().catch(() => {
-        // Anonymous sessions are expected on public routes.
-      });
+      bootstrapSession();
     }
-  }, [isLoggedIn, refreshToken]);
+  }, [bootstrapSession, isLoggedIn]);
 
   return (
     <QueryClientProvider client={queryClient}>

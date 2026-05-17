@@ -7,6 +7,7 @@ This guide deploys Lexguard as three Coolify Nixpacks applications from the same
 - `lexguard-web`: Vite static site, publish directory `apps/web/dist`, uses `nixpacks.web.toml`
 
 Shared services are Postgres with pgvector, Redis, and Cloudflare R2 for contract storage.
+Production API deployments also need an upload scanning service. Scanned-PDF support requires an OCR HTTP service for the worker when image-only PDFs are in scope.
 
 ## 1. Create Shared Services
 
@@ -117,6 +118,10 @@ FIRECRAWL_API_KEY=
 
 RATE_LIMIT_UPLOAD_PER_HOUR=10
 RATE_LIMIT_CHAT_PER_HOUR=30
+
+UPLOAD_SCANNER_MODE=http
+UPLOAD_SCANNER_URL=https://scanner.your-domain.com/scan
+
 WORKER_CONCURRENCY=5
 ANALYSIS_TIMEOUT_MS=120000
 ```
@@ -127,7 +132,7 @@ Generate secrets locally:
 openssl rand -base64 48
 ```
 
-The API refuses to boot in production if `ALLOWED_ORIGINS=*`, `API_BASE_URL` is not HTTPS, `STORAGE_ENDPOINT` is not HTTPS, placeholder secrets are used, or the JWT access and refresh secrets match. Keep `ALLOWED_ORIGINS` as an exact comma-separated allow-list of deployed web origins; do not use wildcards for previews or production.
+The API refuses to boot in production if `ALLOWED_ORIGINS=*`, `API_BASE_URL` is not HTTPS, `STORAGE_ENDPOINT` is not HTTPS, placeholder secrets are used, the JWT access and refresh secrets match, or `UPLOAD_SCANNER_MODE=disabled`. Keep `ALLOWED_ORIGINS` as an exact comma-separated allow-list of deployed web origins; do not use wildcards for previews or production.
 
 ## 3. Create the Worker Application
 
@@ -167,11 +172,13 @@ STORAGE_SECRET_KEY=<r2-secret-access-key>
 STORAGE_BUCKET=lexguard-contracts
 STORAGE_REGION=auto
 STORAGE_FORCE_PATH_STYLE=false
+
+OCR_SERVICE_URL=https://ocr.your-domain.com/extract
 ```
 
 Scale workers horizontally by creating more worker resources with the same env vars. Keep the same Redis and Postgres URLs so all workers consume the same `analysis` queue.
 
-The worker also refuses to boot in production if `STORAGE_ENDPOINT` is not HTTPS or placeholder Gemini/R2 credentials are used.
+The worker also refuses to boot in production if `STORAGE_ENDPOINT` is not HTTPS or placeholder Gemini/R2 credentials are used. If `OCR_SERVICE_URL` is set, scanned PDFs with empty extracted text are sent to that service and analysis metadata records `ocrNeeded` and `ocrUsed`.
 
 ## 4. Create the Web Application
 

@@ -44,16 +44,11 @@ authRoutes.post("/refresh", zValidator("json", optionalRefreshSchema), async (c)
   return c.json(result);
 });
 
-authRoutes.post(
-  "/logout",
-  authMiddleware,
-  zValidator("json", optionalRefreshSchema.optional()),
-  async (c) => {
-    await authService.logout(c.req.valid("json")?.refreshToken ?? getCookie(c, "lexguard_refresh"));
-    deleteCookie(c, "lexguard_refresh", { path: "/" });
-    return c.json({ ok: true });
-  },
-);
+authRoutes.post("/logout", zValidator("json", optionalRefreshSchema.optional()), async (c) => {
+  await authService.logout(c.req.valid("json")?.refreshToken ?? getCookie(c, "lexguard_refresh"));
+  deleteCookie(c, "lexguard_refresh", { path: "/" });
+  return c.json({ ok: true });
+});
 
 authRoutes.get("/me", authMiddleware, async (c) => {
   return c.json({ user: c.var.user });

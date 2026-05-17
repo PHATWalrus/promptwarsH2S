@@ -69,7 +69,7 @@ export async function riskJob(job: Job<AnalysisJobData>) {
   return { stage: "risk", maxRisk, riskLevel };
 }
 
-function applyDeterministicRisk(clause: typeof clauses.$inferSelect) {
+export function applyDeterministicRisk(clause: typeof clauses.$inferSelect) {
   const text = clause.rawText.toLowerCase();
   let riskScore = clause.riskScore;
   let riskLevel = clause.riskLevel;
@@ -98,6 +98,26 @@ function applyDeterministicRisk(clause: typeof clauses.$inferSelect) {
   if (clause.category === "payment" && /\b(90|ninety)\b/.test(text)) {
     riskScore = Math.max(riskScore, 58);
     reasons.push("Long payment terms can create cash-flow risk.");
+  }
+  if (clause.category === "data_sharing" || /personal data|business purpose|retain/i.test(text)) {
+    riskScore = Math.max(riskScore, 78);
+    reasons.push("Broad privacy or compliance language may permit excessive data use.");
+  }
+  if (/future work|pre-existing|assign all|intellectual property|\bip\b/i.test(text)) {
+    riskScore = Math.max(riskScore, 82);
+    reasons.push("ip ownership wording may transfer more work than intended.");
+  }
+  if (/post-employment|future work options|restrict.*work/i.test(text)) {
+    riskScore = Math.max(riskScore, 85);
+    reasons.push("employment restrictions may limit future work options.");
+  }
+  if (clause.isAmbiguous) {
+    riskScore = Math.max(riskScore, 62);
+    reasons.push("The clause is ambiguous and may be hard to apply predictably.");
+  }
+  if (clause.isOnesSided) {
+    riskScore = Math.max(riskScore, 70);
+    reasons.push("One-sided wording may shift leverage away from the user.");
   }
   riskLevel =
     riskScore >= 85 ? "critical" : riskScore >= 70 ? "high" : riskScore >= 40 ? "medium" : "low";

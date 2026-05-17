@@ -88,7 +88,11 @@ export class AuthService {
 
   async logout(refreshToken?: string) {
     if (refreshToken) {
-      await revokeRefreshToken(redis, refreshToken);
+      try {
+        await revokeRefreshToken(redis, refreshToken);
+      } catch {
+        // Logout is intentionally idempotent so expired or malformed refresh tokens still clear the client cookie.
+      }
     }
     return { ok: true };
   }

@@ -18,6 +18,7 @@ export const analysisJobs = pgTable(
     riskLevel: riskLevelEnum("risk_level"),
     errorMessage: text("error_message"),
     privacyFlags: text("privacy_flags"),
+    analysisMetadata: text("analysis_metadata"),
     summary: text("summary"),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

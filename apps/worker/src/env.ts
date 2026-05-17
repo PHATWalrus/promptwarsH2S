@@ -39,6 +39,7 @@ const envSchema = z
     STORAGE_BUCKET: z.string().min(1),
     STORAGE_REGION: z.string().default("us-east-1"),
     STORAGE_FORCE_PATH_STYLE: stringBoolean.default(true),
+    OCR_SERVICE_URL: z.url().optional(),
   })
   .superRefine((value, ctx) => {
     if (value.NODE_ENV !== "production") {

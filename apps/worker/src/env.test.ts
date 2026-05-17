@@ -16,6 +16,7 @@ const validProductionEnv = {
   STORAGE_BUCKET: "lexguard-contracts",
   STORAGE_REGION: "auto",
   STORAGE_FORCE_PATH_STYLE: "false",
+  OCR_SERVICE_URL: "https://ocr.lexguard.example/extract",
 };
 
 Object.assign(process.env, validProductionEnv);

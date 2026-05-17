@@ -36,7 +36,7 @@ function SettingsPage() {
               </div>
               <div className="grid gap-5 md:grid-cols-2">
                 <Input label="Full Legal Name" value={user?.name ?? "Lexguard User"} readOnly />
-                <Input label="Professional Title" value={user?.role ?? "Legal Counsel"} readOnly />
+                <Input label="Account Role" value={user?.role ?? "user"} readOnly />
                 <div className="md:col-span-2">
                   <Input
                     label="Corporate Email Address"
@@ -63,10 +63,10 @@ function SettingsPage() {
             </div>
             <div className="grid gap-5 p-8 md:grid-cols-2">
               <div className="md:col-span-2">
-                <Input label="Entity Name" value="LEXGUARD Enterprise Solutions LLC" readOnly />
+                <Input label="Organization ID" value={user?.orgId ?? "Not configured"} readOnly />
               </div>
-              <Input label="Tax ID / EIN" value="XX-XXXXX892" readOnly />
-              <Input label="Data Jurisdiction" value="US-East (N. Virginia)" readOnly />
+              <Input label="Data Jurisdiction" value="Configured by deployment" readOnly />
+              <Input label="Storage Region" value="Configured by deployment" readOnly />
             </div>
           </section>
         </main>
@@ -105,8 +105,7 @@ function SettingsPage() {
               <p className="mb-6 text-on-surface-variant">
                 Manage keys for external system integrations.
               </p>
-              <ApiKey label="Production Webhook" value="lx_prod_**************9a2f" />
-              <ApiKey label="Staging Integration" value="lx_test_**************b71c" />
+              <ApiKey label="API keys" value="Managed by your administrator" />
               <Button variant="secondary" className="mt-6 w-full" onClick={() => logout()}>
                 Sign Out
               </Button>

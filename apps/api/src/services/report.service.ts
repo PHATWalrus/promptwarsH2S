@@ -8,10 +8,61 @@ export class ReportService {
 
   async pdf(contractId: string, user: AuthUser) {
     const report = await this.json(contractId, user);
-    return minimalPdf(
-      `LEXGUARD Risk Report\n\n${report.summary}\n\nOverall risk: ${report.overallRisk.level}`,
+    return minimalPdf(formatRiskReportText(report));
+  }
+}
+
+export function formatRiskReportText(report: {
+  summary: string;
+  overallRisk: { score: number; level: string; summary: string };
+  clauses: Array<{
+    id?: string;
+    contractId?: string;
+    category: string;
+    rawText: string;
+    riskLevel: string;
+    riskScore: number;
+    riskRationale?: string | null;
+    plainExplanation?: string | null;
+    scenarioIllustration?: string | null;
+    negotiationTips?: string[] | null;
+  }>;
+  privacyFlags?: string[];
+}) {
+  const lines = [
+    "LEXGUARD Risk Report",
+    "",
+    "This is legal information, not legal advice.",
+    "",
+    report.summary || report.overallRisk.summary,
+    `Overall risk: ${report.overallRisk.level} (${report.overallRisk.score}/100)`,
+    "",
+    "Clause findings",
+  ];
+
+  for (const clause of report.clauses) {
+    lines.push(
+      "",
+      `- ${clause.category.replaceAll("_", " ")}: ${clause.riskLevel} (${clause.riskScore}/100)`,
+      `  Text: ${clause.rawText}`,
+    );
+    if (clause.riskRationale) lines.push(`  Risk: ${clause.riskRationale}`);
+    if (clause.plainExplanation) lines.push(`  Explanation: ${clause.plainExplanation}`);
+    if (clause.scenarioIllustration) lines.push(`  Scenario: ${clause.scenarioIllustration}`);
+    if (clause.negotiationTips?.length) {
+      lines.push(`  Negotiation: ${clause.negotiationTips.join(" ")}`);
+    }
+  }
+
+  if (report.privacyFlags?.length) {
+    lines.push(
+      "",
+      "Privacy and compliance flags",
+      ...report.privacyFlags.map((flag) => `- ${flag}`),
     );
   }
+
+  return lines.join("\n");
 }
 
 function minimalPdf(text: string) {

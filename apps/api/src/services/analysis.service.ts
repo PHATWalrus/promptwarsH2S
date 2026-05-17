@@ -1,5 +1,5 @@
 import { analysisJobs, clauses, contracts, tenantContractFilter } from "@lexguard/db";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db } from "../lib/db";
 import { getAnalysisQueue } from "../lib/queue";
 import type { AuthUser } from "../middleware/auth";
@@ -38,8 +38,13 @@ export class AnalysisService {
       .select()
       .from(analysisJobs)
       .innerJoin(contracts, eq(analysisJobs.contractId, contracts.id))
-      .where(and(eq(analysisJobs.contractId, contractId), eq(contracts.orgId, user.orgId)))
-      .orderBy(analysisJobs.createdAt)
+      .where(
+        and(
+          eq(analysisJobs.contractId, contractId),
+          tenantContractFilter({ userId: user.id, orgId: user.orgId, role: user.role }, contractId),
+        ),
+      )
+      .orderBy(desc(analysisJobs.createdAt))
       .limit(1);
     const status = analysis?.analysis_jobs.status ?? "queued";
     const progressByStatus: Record<string, number> = {
@@ -58,16 +63,30 @@ export class AnalysisService {
       .select()
       .from(analysisJobs)
       .innerJoin(contracts, eq(analysisJobs.contractId, contracts.id))
-      .where(and(eq(analysisJobs.contractId, contractId), eq(contracts.orgId, user.orgId)))
+      .where(
+        and(
+          eq(analysisJobs.contractId, contractId),
+          tenantContractFilter({ userId: user.id, orgId: user.orgId, role: user.role }, contractId),
+        ),
+      )
       .limit(1);
-    const rows = await db.select().from(clauses).where(eq(clauses.contractId, contractId));
+    const rows = await db
+      .select({ clause: clauses })
+      .from(clauses)
+      .innerJoin(contracts, eq(clauses.contractId, contracts.id))
+      .where(
+        and(
+          eq(clauses.contractId, contractId),
+          tenantContractFilter({ userId: user.id, orgId: user.orgId, role: user.role }, contractId),
+        ),
+      );
     return {
       overallRisk: {
         score: analysis?.analysis_jobs.overallRiskScore ?? 0,
         level: analysis?.analysis_jobs.riskLevel ?? "low",
         summary: analysis?.analysis_jobs.summary ?? "Analysis has not completed yet.",
       },
-      clauses: rows,
+      clauses: rows.map((row) => row.clause),
       privacyFlags: analysis?.analysis_jobs.privacyFlags
         ? JSON.parse(analysis.analysis_jobs.privacyFlags)
         : [],

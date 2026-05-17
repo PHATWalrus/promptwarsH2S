@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { Download, Filter, GitCompare, Lock, Search } from "lucide-react";
+import { Download, GitCompare, Lock, Search } from "lucide-react";
 import type React from "react";
 import { useState } from "react";
 import { Button } from "../components/ui/Button";
@@ -17,6 +17,7 @@ interface CompareMatrix {
   contractIds: string[];
   matrix: Array<{
     term: string;
+    standardBenchmark: string;
     contracts: Array<{
       contractId: string;
       clauses: Array<{
@@ -32,6 +33,7 @@ interface CompareMatrix {
 function ComparePage() {
   const { data: contracts = [], isLoading } = useContracts();
   const [selected, setSelected] = useState<string[]>([]);
+  const [query, setQuery] = useState("");
   const [matrix, setMatrix] = useState<CompareMatrix | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isComparing, setIsComparing] = useState(false);
@@ -58,23 +60,8 @@ function ComparePage() {
   };
 
   const comparisonRows = matrix?.matrix.length
-    ? matrix.matrix
-    : [
-        {
-          term: "limitation_of_liability",
-          contracts: selected.map((contractId) => ({
-            contractId,
-            clauses: [],
-          })),
-        },
-        {
-          term: "governing_law",
-          contracts: selected.map((contractId) => ({
-            contractId,
-            clauses: [],
-          })),
-        },
-      ];
+    ? matrix.matrix.filter((row) => row.term.toLowerCase().includes(query.toLowerCase()))
+    : [];
 
   return (
     <div className="mx-auto max-w-[1600px] px-5 py-8 md:px-8">
@@ -86,15 +73,25 @@ function ComparePage() {
           </h1>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row">
-          <Button variant="secondary">
-            <Filter className="size-4" />
-            Filter Differences
-          </Button>
           <Button disabled={selected.length < 2 || isComparing} onClick={runCompare}>
             <GitCompare className="size-4" />
             {isComparing ? "Running..." : "Run Analysis"}
           </Button>
-          <Button variant="secondary">
+          <Button
+            variant="secondary"
+            disabled={!matrix}
+            onClick={() => {
+              const blob = new Blob([JSON.stringify(matrix, null, 2)], {
+                type: "application/json",
+              });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement("a");
+              link.href = url;
+              link.download = "lexguard-comparison.json";
+              link.click();
+              URL.revokeObjectURL(url);
+            }}
+          >
             <Download className="size-4" />
             Export Report
           </Button>
@@ -111,7 +108,12 @@ function ComparePage() {
         <aside className="surface-panel p-5">
           <div className="relative mb-5">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-on-surface-variant" />
-            <Input placeholder="Search clauses, terms..." className="pl-9" readOnly />
+            <Input
+              placeholder="Search clause categories..."
+              className="pl-9"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
           </div>
           <p className="quiet-label mb-4 text-text">Select Contracts</p>
           {isLoading ? (
@@ -175,37 +177,31 @@ function ComparePage() {
               >
                 <div className="bg-surface-1 p-6">
                   <p className="font-serif text-2xl capitalize">{row.term.replaceAll("_", " ")}</p>
-                  <p className="mt-3 text-sm text-on-surface-variant">
-                    Review deviations from internal standard.
-                  </p>
+                  <p className="mt-3 text-sm text-on-surface-variant">{row.standardBenchmark}</p>
                 </div>
-                {(selected.length ? selected.slice(0, 3) : ["base", "vendor-a", "vendor-b"]).map(
-                  (contractId, index) => {
-                    const contractMatch = row.contracts.find(
-                      (entry) => entry.contractId === contractId,
-                    );
-                    const clause = contractMatch?.clauses[0];
-                    return (
-                      <div
-                        className="min-h-56 border-l border-border bg-[#f9fafb] p-6 text-[#1a1c22]"
-                        key={`${row.term}-${contractId}`}
-                      >
-                        {clause ? (
-                          <>
-                            <RiskBadge level={riskLevel(clause.riskLevel)} className="mb-4" />
-                            <p className="text-lg leading-8">{clause.summary}</p>
-                          </>
-                        ) : (
-                          <p className="text-lg italic leading-8 text-[#7b8682]">
-                            {index === 0
-                              ? '"Internal baseline clause available after analysis."'
-                              : "No deviation found."}
-                          </p>
-                        )}
-                      </div>
-                    );
-                  },
-                )}
+                {selected.slice(0, 3).map((contractId) => {
+                  const contractMatch = row.contracts.find(
+                    (entry) => entry.contractId === contractId,
+                  );
+                  const clause = contractMatch?.clauses[0];
+                  return (
+                    <div
+                      className="min-h-56 border-l border-border bg-[#f9fafb] p-6 text-[#1a1c22]"
+                      key={`${row.term}-${contractId}`}
+                    >
+                      {clause ? (
+                        <>
+                          <RiskBadge level={riskLevel(clause.riskLevel)} className="mb-4" />
+                          <p className="text-lg leading-8">{clause.summary}</p>
+                        </>
+                      ) : (
+                        <p className="text-lg italic leading-8 text-[#7b8682]">
+                          No matching analyzed clause for this benchmark.
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
               </motion.div>
             ))}
           </div>

@@ -1,3 +1,5 @@
+import { lookup } from "node:dns/promises";
+import { isIP } from "node:net";
 import { env } from "../env";
 
 export interface CrawlResult {
@@ -9,6 +11,7 @@ export interface CrawlResult {
 
 export class CrawlerService {
   async crawlLegalPage(url: string): Promise<CrawlResult> {
+    await assertSafeCrawlUrl(url);
     const providers =
       env.CRAWL_PROVIDER === "cloudflare"
         ? [this.cloudflare.bind(this), this.firecrawl.bind(this), this.manual.bind(this)]
@@ -100,6 +103,66 @@ export class CrawlerService {
 }
 
 export const crawlerService = new CrawlerService();
+
+export async function assertSafeCrawlUrl(rawUrl: string) {
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    throw new Error("URL is not allowed");
+  }
+  if (!["http:", "https:"].includes(parsed.protocol)) {
+    throw new Error("URL is not allowed");
+  }
+  const host = parsed.hostname.toLowerCase();
+  if (isBlockedHost(host)) {
+    throw new Error("URL is not allowed");
+  }
+  const addresses = isIP(host) ? [{ address: host }] : await lookup(host, { all: true });
+  if (addresses.some(({ address }) => isBlockedHost(address))) {
+    throw new Error("URL is not allowed");
+  }
+}
+
+function isBlockedHost(host: string) {
+  const normalized = host.replace(/^\[|\]$/g, "").toLowerCase();
+  if (normalized === "localhost" || normalized.endsWith(".localhost")) {
+    return true;
+  }
+  if (normalized === "0.0.0.0" || normalized === "::" || normalized === "::1") {
+    return true;
+  }
+  if (normalized.startsWith("::ffff:")) {
+    return true;
+  }
+  if (normalized.startsWith("127.") || normalized.startsWith("169.254.")) {
+    return true;
+  }
+  if (normalized.startsWith("10.") || normalized.startsWith("192.168.")) {
+    return true;
+  }
+  const parts = normalized.split(".").map((part) => Number(part));
+  if (parts.length === 4 && parts.every((part) => Number.isInteger(part))) {
+    const [first, second] = parts;
+    if (first === 172 && second !== undefined && second >= 16 && second <= 31) {
+      return true;
+    }
+    if (first === 100 && second !== undefined && second >= 64 && second <= 127) {
+      return true;
+    }
+    if (first === 198 && (second === 18 || second === 19)) {
+      return true;
+    }
+  }
+  if (
+    normalized.startsWith("fc") ||
+    normalized.startsWith("fd") ||
+    normalized.startsWith("fe80:")
+  ) {
+    return true;
+  }
+  return false;
+}
 
 async function fetchWithTimeout(url: string, init: RequestInit = {}, timeoutMs = 15_000) {
   const controller = new AbortController();

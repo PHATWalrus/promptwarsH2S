@@ -1,7 +1,8 @@
 import { clauseFeedback, clauses, contracts } from "@lexguard/db";
 import type { ClauseFeedbackInput } from "@lexguard/types";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "../lib/db";
+import { toPgVector } from "../lib/vector";
 import type { AuthUser } from "../middleware/auth";
 import { aiClient } from "./ai.service";
 
@@ -51,12 +52,13 @@ export class ClauseService {
     const embedding = await aiClient.embed(query);
     const base = [eq(contracts.orgId, user.orgId)];
     if (options.contractId) base.push(eq(clauses.contractId, options.contractId));
+    const distance = sql<number>`${clauses.embedding} <=> ${toPgVector(embedding)}::vector`;
     return db
-      .select({ clause: clauses })
+      .select({ clause: clauses, distance })
       .from(clauses)
       .innerJoin(contracts, eq(clauses.contractId, contracts.id))
       .where(and(...base))
-      .orderBy(desc(clauses.confidenceScore))
+      .orderBy(distance, desc(clauses.confidenceScore))
       .limit(options.limit)
       .then((rows) =>
         rows.map((row) => ({ ...row.clause, queryEmbeddingDimensions: embedding.length })),

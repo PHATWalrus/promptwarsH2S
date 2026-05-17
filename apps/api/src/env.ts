@@ -54,6 +54,8 @@ const envSchema = z
     CRAWL_PROVIDER: z.enum(["cloudflare", "firecrawl", "manual"]).default("cloudflare"),
     RATE_LIMIT_UPLOAD_PER_HOUR: z.coerce.number().int().min(1).default(10),
     RATE_LIMIT_CHAT_PER_HOUR: z.coerce.number().int().min(1).default(30),
+    UPLOAD_SCANNER_MODE: z.enum(["disabled", "http"]).default("disabled"),
+    UPLOAD_SCANNER_URL: z.url().optional(),
     WORKER_CONCURRENCY: z.coerce.number().int().min(1).default(5),
     ANALYSIS_TIMEOUT_MS: z.coerce.number().int().min(1000).default(120000),
   })
@@ -109,6 +111,22 @@ const envSchema = z
         code: "custom",
         path: ["JWT_REFRESH_SECRET"],
         message: "JWT_REFRESH_SECRET must be different from JWT_ACCESS_SECRET",
+      });
+    }
+
+    if (value.UPLOAD_SCANNER_MODE === "disabled") {
+      ctx.addIssue({
+        code: "custom",
+        path: ["UPLOAD_SCANNER_MODE"],
+        message: "UPLOAD_SCANNER_MODE cannot be disabled in production",
+      });
+    }
+
+    if (value.UPLOAD_SCANNER_MODE === "http" && !value.UPLOAD_SCANNER_URL) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["UPLOAD_SCANNER_URL"],
+        message: "UPLOAD_SCANNER_URL is required when UPLOAD_SCANNER_MODE=http",
       });
     }
   });

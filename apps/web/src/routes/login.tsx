@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, Lock, Mail, ShieldCheck, User } from "lucide-react";
 import type React from "react";
@@ -19,6 +19,7 @@ function LoginPage() {
 
 export function AuthPage({ initialMode = "login" }: { initialMode?: "login" | "register" }) {
   const navigate = useNavigate();
+  const search = useSearch({ strict: false }) as { redirect?: string };
   const login = useAuthStore((s) => s.login);
   const register = useAuthStore((s) => s.register);
   const [email, setEmail] = useState("");
@@ -54,7 +55,7 @@ export function AuthPage({ initialMode = "login" }: { initialMode?: "login" | "r
       } else {
         await login({ email, password });
       }
-      navigate({ to: "/dashboard" });
+      navigate({ to: search.redirect || "/dashboard" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Authentication failed. Please try again.");
     } finally {

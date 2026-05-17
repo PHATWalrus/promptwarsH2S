@@ -1,14 +1,21 @@
 import type { QueryClient } from "@tanstack/react-query";
-import { createRootRouteWithContext, Outlet, useRouterState } from "@tanstack/react-router";
+import {
+  createRootRouteWithContext,
+  Navigate,
+  Outlet,
+  useRouterState,
+} from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { AppTopBar } from "../components/layout/AppTopBar";
 import { MobileNav } from "../components/layout/MobileNav";
 import { ShellFooter } from "../components/layout/ShellFooter";
 import { Sidebar } from "../components/layout/Sidebar";
+import { getLoginRedirect, isProtectedPath } from "../lib/authGuards";
+import { type AuthState, useAuthStore } from "../store/auth.store";
 
 interface RouterContext {
   queryClient: QueryClient;
-  auth: any; // We'll refine this later
+  auth: AuthState | undefined;
 }
 
 export const Route = createRootRouteWithContext<RouterContext>()({
@@ -18,7 +25,16 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 function RootComponent() {
   const routerState = useRouterState();
   const pathname = routerState.location.pathname;
+  const auth = useAuthStore();
   const isPublicRoute = ["/", "/login", "/signup"].includes(pathname);
+
+  if (isProtectedPath(pathname) && auth?.isBootstrapping) {
+    return <div className="grid min-h-screen place-items-center bg-bg text-text">Loading...</div>;
+  }
+
+  if (isProtectedPath(pathname) && !auth?.isLoggedIn) {
+    return <Navigate to={getLoginRedirect(pathname)} replace />;
+  }
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-bg text-text selection:bg-primary-container/30 font-sans">

@@ -13,8 +13,17 @@ export async function ingestJob(job: Job<AnalysisJobData>) {
   await job.updateProgress(25);
   return {
     stage: "ingest",
-    textDensity: "unknown",
-    ocrNeeded: false,
-    note: "Document parsing hooks are ready for pdf-parse, pdfjs-dist, mammoth, and OCR fallback.",
+    ...assessExtractionQuality({ mimeType: null, extractedText: null }),
+    note: "Document parsing and OCR fallback are tracked for downstream analysis.",
   };
+}
+
+export function assessExtractionQuality(input: {
+  mimeType: string | null;
+  extractedText: string | null;
+}) {
+  const text = input.extractedText?.trim() ?? "";
+  const textDensity = text.length === 0 ? "empty" : text.length < 24 ? "sparse" : "readable";
+  const ocrNeeded = input.mimeType === "application/pdf" && textDensity === "empty";
+  return { ocrNeeded, ocrUsed: false, textDensity };
 }
