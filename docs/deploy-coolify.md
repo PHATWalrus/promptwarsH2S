@@ -127,7 +127,7 @@ Generate secrets locally:
 openssl rand -base64 48
 ```
 
-The API refuses to boot in production if `ALLOWED_ORIGINS=*`, placeholder secrets are used, or the JWT access and refresh secrets match.
+The API refuses to boot in production if `ALLOWED_ORIGINS=*`, `API_BASE_URL` is not HTTPS, `STORAGE_ENDPOINT` is not HTTPS, placeholder secrets are used, or the JWT access and refresh secrets match. Keep `ALLOWED_ORIGINS` as an exact comma-separated allow-list of deployed web origins; do not use wildcards for previews or production.
 
 ## 3. Create the Worker Application
 
@@ -171,6 +171,8 @@ STORAGE_FORCE_PATH_STYLE=false
 
 Scale workers horizontally by creating more worker resources with the same env vars. Keep the same Redis and Postgres URLs so all workers consume the same `analysis` queue.
 
+The worker also refuses to boot in production if `STORAGE_ENDPOINT` is not HTTPS or placeholder Gemini/R2 credentials are used.
+
 ## 4. Create the Web Application
 
 Create a third Coolify application from the same Git repo.
@@ -190,7 +192,7 @@ If Coolify does not expose a config-file field, set:
 NIXPACKS_CONFIG_FILE=nixpacks.web.toml
 ```
 
-The web app needs `VITE_API_URL` at build time because Vite embeds it into the static bundle:
+The web app needs `VITE_API_URL` at build time because Vite embeds it into the static bundle. Use the HTTPS API URL only:
 
 ```env
 VITE_API_URL=https://api.your-domain.com/api/v1

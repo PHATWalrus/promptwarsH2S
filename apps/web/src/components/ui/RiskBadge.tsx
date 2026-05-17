@@ -24,7 +24,7 @@ export function RiskBadge({ level, className, showText = true }: RiskBadgeProps)
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border",
+        "inline-flex items-center gap-1.5 px-2 py-1 rounded-[4px] text-xs font-medium border capitalize",
         styles[level],
         className,
       )}

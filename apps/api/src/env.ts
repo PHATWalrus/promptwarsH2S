@@ -43,6 +43,7 @@ const envSchema = z
         "gemini-2.5-flash",
         "gemini-2.5-pro",
         "gemini-2.5-flash-lite",
+        "gemini-3-flash-preview",
         "gemini-3.1-flash-lite",
       ])
       .default("gemini-2.5-flash"),
@@ -59,6 +60,22 @@ const envSchema = z
   .superRefine((value, ctx) => {
     if (value.NODE_ENV !== "production") {
       return;
+    }
+
+    if (new URL(value.API_BASE_URL).protocol !== "https:") {
+      ctx.addIssue({
+        code: "custom",
+        path: ["API_BASE_URL"],
+        message: "API_BASE_URL must use https in production",
+      });
+    }
+
+    if (new URL(value.STORAGE_ENDPOINT).protocol !== "https:") {
+      ctx.addIssue({
+        code: "custom",
+        path: ["STORAGE_ENDPOINT"],
+        message: "STORAGE_ENDPOINT must use https in production",
+      });
     }
 
     const origins = value.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim());

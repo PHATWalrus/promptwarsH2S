@@ -35,4 +35,13 @@ describe("worker production env validation", () => {
       }),
     ).toThrow(/GEMINI_API_KEY/);
   });
+
+  test("rejects insecure production storage endpoints", () => {
+    expect(() =>
+      loadEnv({
+        ...validProductionEnv,
+        STORAGE_ENDPOINT: "http://account-id.r2.cloudflarestorage.com",
+      }),
+    ).toThrow(/STORAGE_ENDPOINT/);
+  });
 });

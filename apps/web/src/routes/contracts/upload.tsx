@@ -1,10 +1,20 @@
 import type { ContractType } from "@lexguard/types";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { ArrowLeft, FileText, ShieldCheck } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Building2,
+  ClipboardList,
+  FileText,
+  ShieldCheck,
+  X,
+} from "lucide-react";
+import type React from "react";
 import { useState } from "react";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
+import { LexguardLogo } from "../../components/ui/LexguardLogo";
 import { UploadZone } from "../../components/ui/UploadZone";
 import { useImportUrl, useUploadContract } from "../../hooks/useContracts";
 
@@ -12,13 +22,24 @@ export const Route = createFileRoute("/contracts/upload")({
   component: UploadPage,
 });
 
+const contractOptions: Array<{
+  type: ContractType;
+  label: string;
+  desc: string;
+  icon: React.ReactNode;
+}> = [
+  { type: "nda", label: "NDA", desc: "Non-Disclosure", icon: <ShieldCheck /> },
+  { type: "msa", label: "MSA", desc: "Master Services", icon: <ClipboardList /> },
+  { type: "dpa", label: "DPA", desc: "Data Processing", icon: <Building2 /> },
+];
+
 function UploadPage() {
   const navigate = useNavigate();
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
-  const [contractType, setContractType] = useState<ContractType>("other");
-  const [jurisdiction, setJurisdiction] = useState("");
+  const [contractType, setContractType] = useState<ContractType>("nda");
+  const [jurisdiction, setJurisdiction] = useState("US-DE");
   const [error, setError] = useState<string | null>(null);
   const uploadContract = useUploadContract();
   const importUrl = useImportUrl();
@@ -56,136 +77,150 @@ function UploadPage() {
   };
 
   return (
-    <div className="p-6 md:p-10 max-w-4xl mx-auto min-h-[calc(100vh-4rem)] flex flex-col">
-      <button
-        type="button"
-        onClick={() => navigate({ to: "/dashboard" })}
-        className="flex items-center gap-2 text-sm text-muted hover:text-text transition-colors mb-8 w-fit"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Dashboard
-      </button>
+    <div className="flex min-h-screen flex-col bg-bg text-text">
+      <header className="flex h-20 items-center justify-between border-b border-border px-6">
+        <div className="flex items-center gap-4">
+          <LexguardLogo className="[&_.lexguard-wordmark]:text-[18px]" />
+          <span className="h-8 w-px bg-border" />
+          <span className="text-lg text-on-surface-variant">Upload Contract</span>
+        </div>
+        <button
+          aria-label="Close upload"
+          className="grid size-10 place-items-center rounded-[8px] text-on-surface-variant hover:bg-surface-2 hover:text-text"
+          onClick={() => navigate({ to: "/dashboard" })}
+          type="button"
+        >
+          <X className="size-6" />
+        </button>
+      </header>
 
-      <div className="mb-8">
-        <h1 className="text-3xl font-serif text-text mb-2">Upload Contract</h1>
-        <p className="text-muted">
-          Upload a legal document to instantly extract clauses, assess risks, and verify compliance.
-        </p>
-      </div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className="flex-1"
-      >
-        <div className="bg-surface border border-border rounded-2xl p-1 shadow-sm mb-6">
-          <div className="bg-surface-1 rounded-xl p-6 md:p-12 border border-border/50">
-            <UploadZone onFile={setFile} className="bg-surface" />
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Input
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                placeholder="Title, optional"
-              />
-              <select
-                className="h-10 rounded-[8px] border border-border bg-surface px-3 text-sm text-text"
-                value={contractType}
-                onChange={(event) => setContractType(event.target.value as ContractType)}
-              >
-                <option value="other">Other</option>
-                <option value="employment">Employment</option>
-                <option value="nda">NDA</option>
-                <option value="saas">SaaS</option>
-                <option value="msa">MSA</option>
-                <option value="dpa">DPA</option>
-                <option value="tos">Terms of Service</option>
-                <option value="privacy_policy">Privacy Policy</option>
-                <option value="lease">Lease</option>
-                <option value="insurance">Insurance</option>
-              </select>
-              <Input
-                value={jurisdiction}
-                onChange={(event) => setJurisdiction(event.target.value)}
-                placeholder="Jurisdiction, e.g. US-CA"
-              />
-            </div>
-            <div className="mt-4 flex flex-col sm:flex-row gap-3">
-              <Input
-                value={url}
-                onChange={(event) => setUrl(event.target.value)}
-                placeholder="Import terms or privacy URL"
-              />
-              <Button
-                variant="secondary"
-                disabled={!url || isUploading}
-                onClick={handleImport}
-                className="w-full sm:w-auto"
-              >
-                Import URL
-              </Button>
-            </div>
-            {error && (
-              <p className="mt-4 rounded-md border border-risk-critical/30 bg-risk-critical/10 px-3 py-2 text-sm text-risk-critical">
-                {error}
-              </p>
-            )}
-
-            <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-3 text-sm text-muted">
-                <ShieldCheck className="w-5 h-5 text-primary" />
-                <span>Documents are encrypted end-to-end and stored securely.</span>
+      <main className="mx-auto w-full max-w-5xl flex-1 px-5 py-12">
+        <div className="mb-12 grid grid-cols-3 items-center gap-3 text-center text-xl text-on-surface-variant">
+          {["1. Upload", "2. Configure", "3. Confirm"].map((step, index) => (
+            <div key={step}>
+              <span className={index === 0 ? "text-primary" : ""}>{step}</span>
+              <div className="mt-4 h-1 overflow-hidden rounded-full bg-surface-2">
+                <motion.div
+                  animate={{ width: index === 0 ? "100%" : "0%" }}
+                  className="h-full bg-primary"
+                  initial={false}
+                />
               </div>
-              <Button
-                variant="primary"
-                size="lg"
-                disabled={!file || isUploading}
-                onClick={handleUpload}
-                className="w-full sm:w-auto"
-              >
-                {isUploading ? (
-                  <span className="flex items-center gap-2">
-                    <span className="w-4 h-4 border-2 border-bg border-t-transparent rounded-full animate-spin" />
-                    Analyzing...
-                  </span>
-                ) : (
-                  "Analyze Contract"
-                )}
-              </Button>
             </div>
-          </div>
+          ))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="p-4 rounded-xl border border-border bg-surface flex flex-col gap-2">
-            <div className="w-8 h-8 rounded-lg bg-surface-2 flex items-center justify-center text-primary mb-2">
-              <FileText className="w-4 h-4" />
-            </div>
-            <h3 className="font-medium text-text">Auto-Extraction</h3>
-            <p className="text-sm text-muted">
-              We automatically pull out key dates, entities, and obligations.
-            </p>
-          </div>
-          <div className="p-4 rounded-xl border border-border bg-surface flex flex-col gap-2">
-            <div className="w-8 h-8 rounded-lg bg-surface-2 flex items-center justify-center text-primary mb-2">
-              <ShieldCheck className="w-4 h-4" />
-            </div>
-            <h3 className="font-medium text-text">Risk Detection</h3>
-            <p className="text-sm text-muted">
-              Identify indemnification, liability, and termination risks instantly.
-            </p>
-          </div>
-          <div className="p-4 rounded-xl border border-border bg-surface flex flex-col gap-2">
-            <div className="w-8 h-8 rounded-lg bg-surface-2 flex items-center justify-center text-primary mb-2">
-              <FileText className="w-4 h-4" />
-            </div>
-            <h3 className="font-medium text-text">Format Agnostic</h3>
-            <p className="text-sm text-muted">
-              Upload scanned PDFs or Word documents. Our OCR handles the rest.
-            </p>
-          </div>
+        <div className="mb-8">
+          <h1 className="font-serif text-5xl">Document Ingestion</h1>
+          <p className="mt-3 text-on-surface-variant">
+            Upload your legal document for AI-driven analysis. Supported formats: PDF, DOCX, TXT.
+          </p>
         </div>
-      </motion.div>
+
+        <UploadZone onFile={setFile} className="min-h-[340px] bg-surface-1" />
+
+        {file && (
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-6 flex items-center justify-between rounded-[8px] border border-border bg-surface-1 p-5"
+          >
+            <div className="flex items-center gap-4">
+              <span className="grid size-12 place-items-center rounded-[6px] bg-surface-2 text-on-surface-variant">
+                <FileText className="size-6" />
+              </span>
+              <div>
+                <p className="font-semibold">{file.name}</p>
+                <p className="text-sm text-on-surface-variant">
+                  {(file.size / 1024 / 1024).toFixed(2)} MB • Ready to analyze
+                </p>
+              </div>
+            </div>
+            <div className="h-1 w-40 overflow-hidden rounded-full bg-surface-2">
+              <span className="block h-full w-full bg-primary" />
+            </div>
+          </motion.div>
+        )}
+
+        <div className="mt-8 grid gap-5 md:grid-cols-3">
+          {contractOptions.map((option) => (
+            <button
+              key={option.type}
+              type="button"
+              onClick={() => setContractType(option.type)}
+              className={`relative rounded-[8px] border p-5 text-left transition-colors ${
+                contractType === option.type
+                  ? "border-primary bg-surface-2"
+                  : "border-border bg-surface-1 hover:border-border-hover"
+              }`}
+            >
+              <span className="mb-5 block text-on-surface-variant [&_svg]:size-6">
+                {option.icon}
+              </span>
+              <span className="block text-lg font-semibold">{option.label}</span>
+              <span className="text-sm text-on-surface-variant">{option.desc}</span>
+              <span className="absolute right-5 top-5 size-5 rounded-full border border-border">
+                {contractType === option.type && (
+                  <span className="m-1 block size-3 rounded-full bg-primary" />
+                )}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-6 grid gap-5 md:grid-cols-2">
+          <Input
+            label="Document Title"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            placeholder="MSA_TechCorp_v2.pdf"
+          />
+          <Input
+            label="Governing Law / Jurisdiction"
+            value={jurisdiction}
+            onChange={(event) => setJurisdiction(event.target.value)}
+            placeholder="United States - Delaware"
+          />
+        </div>
+
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <Input
+            label="Import URL"
+            value={url}
+            onChange={(event) => setUrl(event.target.value)}
+            placeholder="https://example.com/terms"
+          />
+          <Button
+            variant="secondary"
+            disabled={!url || isUploading}
+            onClick={handleImport}
+            className="mt-auto w-full sm:w-auto"
+          >
+            Import URL
+          </Button>
+        </div>
+
+        {error && (
+          <p className="mt-4 rounded-[8px] border border-risk-critical/30 bg-risk-critical/10 px-3 py-2 text-sm text-risk-critical">
+            {error}
+          </p>
+        )}
+
+        <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-border pt-7 sm:flex-row">
+          <button
+            type="button"
+            onClick={() => navigate({ to: "/dashboard" })}
+            className="quiet-label flex items-center gap-2 text-on-surface-variant hover:text-text"
+          >
+            <ArrowLeft className="size-4" />
+            Cancel
+          </button>
+          <Button size="lg" disabled={!file || isUploading} onClick={handleUpload}>
+            {isUploading ? "Analyzing..." : "Proceed to Analysis"}
+            <ArrowRight className="size-4" />
+          </Button>
+        </div>
+      </main>
     </div>
   );
 }

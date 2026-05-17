@@ -22,10 +22,10 @@ export function ClauseCard({ clause, onFeedback }: ClauseCardProps) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "bg-surface border rounded-[8px] overflow-hidden transition-all duration-300",
+        "bg-surface-1 border rounded-[8px] overflow-hidden transition-all duration-300",
         isActive
           ? "bg-surface-2 border-primary shadow-[0_0_15px_rgba(45,212,191,0.1)]"
-          : "border-border hover:bg-surface-2 hover:border-muted/30",
+          : "border-border hover:bg-surface-2 hover:border-border-hover",
       )}
     >
       <button
@@ -39,7 +39,7 @@ export function ClauseCard({ clause, onFeedback }: ClauseCardProps) {
         <div className="flex items-center justify-between">
           <div className="flex gap-2">
             <RiskBadge level={clause.riskLevel} />
-            <span className="text-xs font-medium px-2 py-0.5 bg-surface-2 rounded-full text-muted capitalize">
+            <span className="rounded-[4px] bg-surface-2 px-2 py-0.5 text-xs font-medium text-muted capitalize">
               {clause.category.replace("_", " ")}
             </span>
           </div>
@@ -48,11 +48,11 @@ export function ClauseCard({ clause, onFeedback }: ClauseCardProps) {
           </span>
         </div>
 
-        <p className="text-sm text-text font-medium leading-relaxed">
+        <p className="text-sm text-text leading-relaxed">
           {clause.plainExplanation || "No plain explanation available."}
         </p>
 
-        <div className="text-xs font-mono text-faint bg-surface-2 p-2 rounded line-clamp-2">
+        <div className="line-clamp-2 rounded-[4px] bg-bg p-2 font-mono text-xs text-faint">
           "{clause.rawText.substring(0, 120)}
           {clause.rawText.length > 120 ? "..." : ""}"
         </div>
@@ -64,7 +64,7 @@ export function ClauseCard({ clause, onFeedback }: ClauseCardProps) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="border-t border-border bg-surface-2/50"
+            className="border-t border-border bg-bg/45"
           >
             <div className="p-4 flex flex-col gap-4 text-sm">
               {clause.riskRationale && (

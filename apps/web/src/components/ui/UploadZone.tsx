@@ -54,10 +54,10 @@ export function UploadZone({ onFile, className }: UploadZoneProps) {
     <label
       htmlFor={inputId}
       className={cn(
-        "relative w-full h-64 rounded-xl border-2 border-dashed transition-all duration-200 flex flex-col items-center justify-center p-6 text-center cursor-pointer overflow-hidden",
+        "relative w-full min-h-64 rounded-[8px] border-2 border-dashed transition-all duration-200 flex flex-col items-center justify-center p-6 text-center cursor-pointer overflow-hidden",
         isDragging
           ? "border-primary bg-primary/5 scale-[1.02]"
-          : "border-border hover:border-muted hover:bg-surface-2",
+          : "border-border hover:border-border-hover hover:bg-surface-2",
         className,
       )}
       onDragOver={handleDragOver}
@@ -84,15 +84,18 @@ export function UploadZone({ onFile, className }: UploadZoneProps) {
           >
             <div
               className={cn(
-                "p-4 rounded-full transition-colors",
-                isDragging ? "bg-primary/20 text-primary" : "bg-surface text-muted",
+                "p-5 rounded-full transition-colors",
+                isDragging ? "bg-primary/20 text-primary" : "bg-bg text-primary",
               )}
             >
               <UploadCloud className="w-8 h-8" />
             </div>
             <div>
-              <p className="text-lg font-medium text-text">Drag & drop your contract here</p>
-              <p className="text-sm text-faint mt-1">Supports PDF, DOCX, and TXT up to 10MB</p>
+              <p className="font-serif text-3xl text-text">Drag & Drop Document Here</p>
+              <p className="mt-3 max-w-md text-sm text-on-surface-variant">
+                Ensure documents are clearly legible and contain standard contractual language for
+                optimal parsing.
+              </p>
             </div>
             <span className="mt-2 inline-flex items-center justify-center rounded-[8px] border border-border bg-transparent px-4 py-2 text-base text-text transition-colors hover:bg-surface-2">
               Browse Files

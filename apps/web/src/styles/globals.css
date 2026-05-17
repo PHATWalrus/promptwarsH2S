@@ -51,8 +51,10 @@
   --color-on-secondary-fixed: #00201c;
 
   --color-bg: #0d0e11;
+  --color-surface-1: #141519;
   --color-surface-2: #1a1c22;
   --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-hover: rgba(255, 255, 255, 0.18);
   --color-text: #e8e9ec;
   --color-muted: #8a8d96;
   --color-faint: #4a4d55;
@@ -62,17 +64,17 @@
   --color-risk-medium: #eab308;
   --color-risk-low: #22c55e;
 
-  --spacing-lg: 24px;
-  --spacing-gutter: 16px;
-  --spacing-md: 16px;
-  --spacing-unit: 4px;
-  --spacing-xs: 4px;
-  --spacing-container-margin: 32px;
-  --spacing-sm: 8px;
-  --spacing-xl: 40px;
-  --spacing-2xl: 80px;
-  --spacing-3xl: 120px;
-  --spacing-4xl: 160px;
+  --spacing-lex-lg: 24px;
+  --spacing-lex-gutter: 16px;
+  --spacing-lex-md: 16px;
+  --spacing-lex-unit: 4px;
+  --spacing-lex-xs: 4px;
+  --spacing-lex-container-margin: 32px;
+  --spacing-lex-sm: 8px;
+  --spacing-lex-xl: 40px;
+  --spacing-lex-2xl: 80px;
+  --spacing-lex-3xl: 120px;
+  --spacing-lex-4xl: 160px;
 
   --font-headline-sm: "Instrument Serif", serif;
   --font-label-md: "Geist", sans-serif;
@@ -84,15 +86,22 @@
   --font-display-lg-mobile: "Instrument Serif", serif;
   --font-headline-md: "Instrument Serif", serif;
 
-  --text-headline-sm: 28px;
+  --text-headline-sm: 24px;
   --text-label-md: 12px;
   --text-body-sm: 13px;
-  --text-display-lg: 64px;
+  --text-display-lg: 48px;
+  --text-display-lg--letter-spacing: 0;
   --text-code-sm: 12px;
   --text-body-lg: 18px;
-  --text-body-md: 15px;
-  --text-display-lg-mobile: 40px;
-  --text-headline-md: 40px;
+  --text-body-md: 14px;
+  --text-display-lg-mobile: 36px;
+  --text-headline-md: 32px;
+}
+
+html {
+  background: #0d0e11;
+  color-scheme: dark;
+  scroll-behavior: smooth;
 }
 
 body {
@@ -101,18 +110,27 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  min-width: 320px;
+  margin: 0;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: var(--font-sans);
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  color: inherit;
 }
 
 @layer base {
+  :focus-visible {
+    outline: 2px solid rgb(45 212 191 / 0.85);
+    outline-offset: 2px;
+  }
+
   .material-symbols-outlined {
     font-variation-settings:
       "FILL" 0,
@@ -132,5 +150,56 @@ h6 {
   .custom-scrollbar::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 4px;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .lexguard-wordmark {
+    font-family: "Instrument Serif", ui-serif, Georgia, serif;
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: -0.04em;
+    color: #57f1db;
+  }
+
+  .surface-panel {
+    background: #141519;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+  }
+
+  .quiet-label {
+    color: #bacac5;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .paper-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .paper-scrollbar::-webkit-scrollbar-track {
+    background: #ececec;
+  }
+
+  .paper-scrollbar::-webkit-scrollbar-thumb {
+    background: #c7c7c7;
+    border-radius: 9999px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      scroll-behavior: auto;
+      animation-duration: 0.01ms;
+      animation-iteration-count: 1;
+      transition-duration: 0.01ms;
+    }
   }
 }

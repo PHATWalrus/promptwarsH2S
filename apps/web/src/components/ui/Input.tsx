@@ -26,14 +26,13 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              "w-full bg-surface border border-border text-text placeholder-faint rounded-[8px] px-4 py-2.5 transition-all",
-              "focus:outline-none focus:border-primary",
+              "peer w-full bg-surface-1 border border-border text-text placeholder-faint rounded-[8px] px-4 py-2.5 transition-all",
+              "focus:outline-none focus:border-primary-container",
               error && "border-risk-critical focus:border-risk-critical",
               className,
             )}
             {...props}
           />
-          {/* Subtle outer glow on focus for premium feel, simulated via pseudo-class in tailwind or shadow */}
           <div className="absolute inset-0 rounded-[8px] pointer-events-none transition-shadow peer-focus:shadow-[0_0_0_2px_rgba(45,212,191,0.1)]" />
         </div>
         {error && (

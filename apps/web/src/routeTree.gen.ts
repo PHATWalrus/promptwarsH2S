@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SignupRouteImport } from './routes/signup'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -18,6 +19,11 @@ import { Route as ContractsIndexRouteImport } from './routes/contracts/index'
 import { Route as ContractsUploadRouteImport } from './routes/contracts/upload'
 import { Route as ContractsIdRouteImport } from './routes/contracts/$id'
 
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
+  '/signup': typeof SignupRoute
   '/contracts/$id': typeof ContractsIdRoute
   '/contracts/upload': typeof ContractsUploadRoute
   '/contracts/': typeof ContractsIndexRoute
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
+  '/signup': typeof SignupRoute
   '/contracts/$id': typeof ContractsIdRoute
   '/contracts/upload': typeof ContractsUploadRoute
   '/contracts': typeof ContractsIndexRoute
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
+  '/signup': typeof SignupRoute
   '/contracts/$id': typeof ContractsIdRoute
   '/contracts/upload': typeof ContractsUploadRoute
   '/contracts/': typeof ContractsIndexRoute
@@ -98,6 +107,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/settings'
+    | '/signup'
     | '/contracts/$id'
     | '/contracts/upload'
     | '/contracts/'
@@ -108,6 +118,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/settings'
+    | '/signup'
     | '/contracts/$id'
     | '/contracts/upload'
     | '/contracts'
@@ -118,6 +129,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/settings'
+    | '/signup'
     | '/contracts/$id'
     | '/contracts/upload'
     | '/contracts/'
@@ -129,6 +141,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
   SettingsRoute: typeof SettingsRoute
+  SignupRoute: typeof SignupRoute
   ContractsIdRoute: typeof ContractsIdRoute
   ContractsUploadRoute: typeof ContractsUploadRoute
   ContractsIndexRoute: typeof ContractsIndexRoute
@@ -136,6 +149,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -201,6 +221,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
   SettingsRoute: SettingsRoute,
+  SignupRoute: SignupRoute,
   ContractsIdRoute: ContractsIdRoute,
   ContractsUploadRoute: ContractsUploadRoute,
   ContractsIndexRoute: ContractsIndexRoute,

@@ -28,6 +28,7 @@ const envSchema = z
         "gemini-2.5-flash",
         "gemini-2.5-pro",
         "gemini-2.5-flash-lite",
+        "gemini-3-flash-preview",
         "gemini-3.1-flash-lite",
       ])
       .default("gemini-2.5-flash"),
@@ -42,6 +43,14 @@ const envSchema = z
   .superRefine((value, ctx) => {
     if (value.NODE_ENV !== "production") {
       return;
+    }
+
+    if (new URL(value.STORAGE_ENDPOINT).protocol !== "https:") {
+      ctx.addIssue({
+        code: "custom",
+        path: ["STORAGE_ENDPOINT"],
+        message: "STORAGE_ENDPOINT must use https in production",
+      });
     }
 
     for (const field of ["GEMINI_API_KEY", "STORAGE_ACCESS_KEY", "STORAGE_SECRET_KEY"] as const) {

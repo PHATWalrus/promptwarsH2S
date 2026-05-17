@@ -107,6 +107,6 @@ export function estimateTokens(text: string) {
 export function estimateGeminiCostCents(inputTokens: number, outputTokens: number) {
   return Math.ceil(
     (inputTokens / 1_000_000) * GEMINI_FLASH_INPUT_PER_MILLION_CENTS +
-      (outputTokens / 1_000_000) * GEMINI_FLASH_OUTPUT_PER_MILLION_CENTS,
+    (outputTokens / 1_000_000) * GEMINI_FLASH_OUTPUT_PER_MILLION_CENTS,
   );
 }

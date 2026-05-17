@@ -17,11 +17,23 @@ export function AnalysisProgress({
   className,
 }: AnalysisProgressProps) {
   const stages = [
-    { id: "queued", label: "Queued" },
-    { id: "extracting", label: "Extracting Clauses" },
-    { id: "scoring", label: "Scoring Risk" },
-    { id: "explaining", label: "Generating Explanations" },
-    { id: "done", label: "Complete" },
+    { id: "queued", label: "Step 1: Parsing", detail: "Document structure mapped." },
+    {
+      id: "extracting",
+      label: "Step 2: Extracting",
+      detail: "Key clauses and defined terms identified.",
+    },
+    {
+      id: "scoring",
+      label: "Step 3: Scoring Risk",
+      detail: "Evaluating liability and indemnity positions.",
+    },
+    {
+      id: "explaining",
+      label: "Step 4: Privacy Check",
+      detail: "Scrubbing and classifying sensitive content.",
+    },
+    { id: "done", label: "Step 5: Explaining", detail: "Generating human-readable summaries." },
   ];
 
   const currentStageIndex = stages.findIndex((s) => s.id === status);
@@ -44,9 +56,9 @@ export function AnalysisProgress({
   }
 
   return (
-    <div className={cn("bg-surface border border-border rounded-xl p-6", className)}>
+    <div className={cn("bg-surface-1 border border-border rounded-[8px] p-6", className)}>
       <div className="flex items-center justify-between mb-6">
-        <h3 className="font-semibold text-text">Analysis Progress</h3>
+        <h3 className="font-serif text-2xl text-text">Intelligence Pipeline</h3>
         <span className="text-sm font-medium text-primary">{progress}%</span>
       </div>
 
@@ -61,7 +73,7 @@ export function AnalysisProgress({
       </div>
 
       {/* Stages List */}
-      <div className="space-y-4">
+      <div className="space-y-0">
         {stages.map((stage, index) => {
           const isComplete = index < currentStageIndex || status === "done";
           const isCurrent = index === currentStageIndex && status !== "done";
@@ -71,28 +83,36 @@ export function AnalysisProgress({
             <div
               key={stage.id}
               className={cn(
-                "flex items-center gap-3 transition-opacity duration-300",
+                "relative flex gap-4 pb-7 transition-opacity duration-300 last:pb-0",
                 isPending ? "opacity-40" : "opacity-100",
               )}
             >
+              {index < stages.length - 1 && (
+                <span className="absolute left-[9px] top-6 h-[calc(100%-24px)] w-px bg-border" />
+              )}
               {isComplete ? (
-                <CheckCircle className="w-5 h-5 text-primary" />
+                <CheckCircle className="relative z-10 w-5 h-5 text-primary bg-surface-1" />
               ) : isCurrent ? (
-                <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                <Loader2 className="relative z-10 w-5 h-5 text-primary animate-spin bg-surface-1" />
               ) : (
-                <CircleDashed className="w-5 h-5 text-muted" />
+                <CircleDashed className="relative z-10 w-5 h-5 text-muted bg-surface-1" />
               )}
-              <span
-                className={cn(
-                  "text-sm font-medium",
-                  isCurrent ? "text-primary" : isComplete ? "text-text" : "text-muted",
-                )}
-              >
-                {stage.label}
-              </span>
-              {isCurrent && currentStage && (
-                <span className="text-xs text-faint ml-auto animate-pulse">{currentStage}</span>
-              )}
+              <div className="min-w-0">
+                <div
+                  className={cn(
+                    "quiet-label",
+                    isCurrent ? "text-primary" : isComplete ? "text-text" : "text-muted",
+                  )}
+                >
+                  {stage.label}
+                  {isCurrent && currentStage && (
+                    <span className="ml-2 rounded-[4px] border border-primary/30 px-2 py-0.5 text-[10px] text-primary">
+                      Processing
+                    </span>
+                  )}
+                </div>
+                <p className="mt-2 text-sm leading-6 text-on-surface-variant">{stage.detail}</p>
+              </div>
             </div>
           );
         })}

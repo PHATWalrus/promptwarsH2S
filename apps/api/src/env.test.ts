@@ -64,4 +64,20 @@ describe("api production env validation", () => {
       }),
     ).toThrow(/JWT_REFRESH_SECRET/);
   });
+
+  test("rejects insecure production API and storage endpoints", () => {
+    expect(() =>
+      loadEnv({
+        ...validProductionEnv,
+        API_BASE_URL: "http://api.lexguard.example",
+      }),
+    ).toThrow(/API_BASE_URL/);
+
+    expect(() =>
+      loadEnv({
+        ...validProductionEnv,
+        STORAGE_ENDPOINT: "http://account-id.r2.cloudflarestorage.com",
+      }),
+    ).toThrow(/STORAGE_ENDPOINT/);
+  });
 });
