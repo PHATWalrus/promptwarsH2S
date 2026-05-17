@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["bun", "openssl"]
+
+[phases.install]
+cmds = ["bun install --frozen-lockfile"]
+
+[phases.build]
+cmds = ["bun run typecheck"]
+
+[start]
+cmd = "bun --filter @lexguard/api run dev"

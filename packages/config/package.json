@@ -1,0 +1,9 @@
+{
+  "name": "@lexguard/config",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./biome": "./biome.json",
+    "./tsconfig": "./tsconfig.base.json"
+  }
+}
